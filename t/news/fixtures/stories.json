@@ -1,0 +1,15 @@
+[
+   {
+     "NewsStory":
+       [  [ "news_story_id", "headline",
+            "body"
+          ],
+          [ 1, "Jimmy Goes to Washington",
+            "Yesterday Jimmy took a trip to <i>Washington</i>!.  Can you believe it?"
+          ],
+          [ 2, "Tomato Genome Released",
+            "Oh look, it's another genome.  Amazing!"
+          ]
+       ]
+   }
+]

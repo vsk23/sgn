@@ -1,0 +1,11 @@
+[
+   {
+    "NewsCategory":
+       [  ["news_category_id","short_name","long_name"],
+
+          [1,"Monkeys","Monkeys of the World"],
+          [2,"Loved Tomatoes","Tomatoes we have loved"],
+          [3,"Walruses_Sea_World","Walruses found at Sea World"]
+       ]
+   }
+]

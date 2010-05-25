@@ -88,9 +88,21 @@ __PACKAGE__->has_many(
 # Created by DBIx::Class::Schema::Loader v0.07000 @ 2010-05-24 14:46:41
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:m9ilrGbc+GDHkVgOGfdx4w
 
+# inflate `date` as a DateTime object
 __PACKAGE__->load_components(qw/InflateColumn::DateTime/);
 __PACKAGE__->add_columns(
-    date => { data_type => 'datetime' }
+    date => {
+        data_type        => 'timestamp with timezone',
+        default_value    => \"current_timestamp",
+        inflate_datetime => 1,
+        is_nullable      => 0,
+        original         => { default_value => \"now()" },
+    }
+   );
+
+__PACKAGE__->many_to_many(
+    'news_categories',
+    'news_story_categories' => 'news_category_',
    );
 
 # You can replace this text with custom content, and it will be preserved on regeneration
