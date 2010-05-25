@@ -29,6 +29,7 @@ package SGN::Context;
 use MooseX::Singleton;
 
 use Carp;
+use CGI ();
 use Cwd ();
 use File::Basename;
 use File::Spec;
@@ -631,6 +632,20 @@ sub js_import_uris {
     my @urls = @_;
     $j->add(my $m = $_) for @urls;
     return [ $j->uris ];
+}
+
+
+=head2 req
+
+  Usage: $c->req->param('foo')
+  Desc : get a CGI-compatible query object for the current request
+  Args : none
+  Ret  : a CGI-compatible query object
+
+=cut
+
+sub req {
+    CGI->new
 }
 
 
