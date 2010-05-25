@@ -8,7 +8,6 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-
 =head1 NAME
 
 SGN::News::Schema::Result::NewsStory
@@ -39,7 +38,9 @@ __PACKAGE__->table("news_story");
 =head2 date
 
   data_type: 'timestamp with time zone'
+  default_value: current_timestamp
   is_nullable: 0
+  original: {default_value => \"now()"}
 
 =cut
 
@@ -56,7 +57,12 @@ __PACKAGE__->add_columns(
   "body",
   { data_type => "text", is_nullable => 0 },
   "date",
-  { data_type => "timestamp with time zone", is_nullable => 0 },
+  {
+    data_type     => "timestamp with time zone",
+    default_value => \"current_timestamp",
+    is_nullable   => 0,
+    original      => { default_value => \"now()" },
+  },
 );
 __PACKAGE__->set_primary_key("news_story_id");
 __PACKAGE__->add_unique_constraint("news_story_headline_key", ["headline", "date"]);
@@ -79,8 +85,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07000 @ 2010-05-24 12:30:18
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:dt7SEmgC93ZuAX/NpYBspg
+# Created by DBIx::Class::Schema::Loader v0.07000 @ 2010-05-24 14:46:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:m9ilrGbc+GDHkVgOGfdx4w
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration
