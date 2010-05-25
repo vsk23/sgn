@@ -98,14 +98,19 @@ sub create_update_story {
 sub delete_story {
     my ($self, $c ) = @_;
 
+    no warnings 'numeric';
     my $story = $self->_story_rs($c)
-                     ->find( $c->req->param('news_story_id') )
+                     ->find( $c->req->param('news_story_id') + 0 )
         or $c->throw( message  => 'story not found',
                       is_error => 0 );
 
     $story->delete;
+    $c->req->redirect( $self->_backto($c) );
 }
 
+# strftime format string we are using on the user side.  the other
+# format string (in the form conf above) is how the date is formatted
+# for database insertion
 sub _date_fmt {
     '%F %I:%M%p'
 }
@@ -115,13 +120,14 @@ sub display_story_form {
 
     $form ||= $self->_build_story_form($c);
 
-    # embed in the form an 'op' field that tells whether we are creating or updating
+    # fill in the form with existing values if we are updating
     no warnings 'numeric';
     if( my $story = $self->_story_rs($c)->find( $c->req->param('news_story_id') + 0) ) {
         $form->model->default_values( $story );
-        $form->default_values({ op => 'update',
-                                date => $story->date->strftime( $self->_date_fmt ),
-                            });
+        $form->default_values({
+            op   => 'update',
+            date => $story->date->strftime( $self->_date_fmt ),
+        });
     } else {
         $form->default_values({ op => 'create' });
     }
