@@ -1,0 +1,22 @@
+<%args>
+  $form
+</%args>
+
+% my $add_edit = $form->get_element({name => 'headline'})->value ? 'Edit' : 'Add';
+
+<& /page/page_title.mas, title => "$add_edit News Item" &>
+
+<style type="text/css">
+ #story_form {
+   width: 70%;
+   margin: 1em auto;
+ }
+ #story_form label {
+   display: block;
+   font-weight: bold;
+ }
+</style>
+
+<div id="story_form">
+  <% $form->render %>
+</div>
