@@ -15,6 +15,13 @@
    display: block;
    font-weight: bold;
  }
+ #story_form .error_message {
+   color: red;
+   font-weight: bold;        
+ }
+ #story_form .error_message:before {
+   content: 'Error: '
+ }
 </style>
 
 <div id="story_form">

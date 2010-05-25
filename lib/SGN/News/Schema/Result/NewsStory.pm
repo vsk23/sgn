@@ -88,6 +88,10 @@ __PACKAGE__->has_many(
 # Created by DBIx::Class::Schema::Loader v0.07000 @ 2010-05-24 14:46:41
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:m9ilrGbc+GDHkVgOGfdx4w
 
+__PACKAGE__->load_components(qw/InflateColumn::DateTime/);
+__PACKAGE__->add_columns(
+    date => { data_type => 'datetime' }
+   );
 
 # You can replace this text with custom content, and it will be preserved on regeneration
 1;

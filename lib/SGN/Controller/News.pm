@@ -18,18 +18,30 @@ sub _build_story_form {
     my ($self,$c) = @_;
     $c or confess 'must pass c';
 
-    my $form = HTML::FormFu->new(YAML::Load(<<'EOY'));
+    my $date_fmt = $self->_date_fmt;
+    my $form = HTML::FormFu->new(YAML::Load(<<EOY));
       method: POST
       model_config:
          resultset: NewsStory
       elements:
-          - type: Date
+          - type: Text
             name: date
             label: Date
-            default_natural: today
+            inflators:
+               - type: DateTime
+                 parser:
+                   strptime: '$date_fmt'
+                 strptime:
+                   pattern: '\%F \%H:\%M'
 
           - type: Hidden
             name: news_story_id
+
+          - type: Hidden
+            name: op
+
+          - type: Hidden
+            name: backto
 
           - type: Text
             name: headline
@@ -46,37 +58,41 @@ sub _build_story_form {
             name: submit
 EOY
 
+#    $form->element({ type => 'Hidden', name => 'operation', default => $self->_backto($c) });
+
+    # embed a back-to url in the form, and the default date of right now (server time)
+    $form->default_values({
+        backto => $self->_backto($c),
+        date   => lc DateTime->now( time_zone => 'local' )->strftime( $date_fmt ),
+       });
+
     $form->stash->{schema} = $c->dbic_schema('SGN::News::Schema');
-    $form->process( $c->req );
 
     return $form;
 }
-
-sub create_story {
-    my ($self, $c ) = @_;
-
-    my $form = $self->_build_story_form($c);
-
-    if( $form->submitted_and_valid ) {
-        my $story = $form->model->create;
-        $c->req->redirect('');
-    } else {
-        $c->throw( message  => 'invalid story submission',
-                   is_error => 0,
-                   developer_message => do { require Data::Dumper; '<pre>'.Data::Dumper::Dumper( $form->get_errors ).'< },
-                  );
-    }
+sub _backto {
+    my ($self, $c) = @_;
+    my $back_to_url = $c->req->param('backto') || $c->req->url( -relative => 1 );
+    $back_to_url =~ s|://||; #< foil any cross-site redirecting
+    return $back_to_url;
 }
 
-sub update_story {
+sub create_update_story {
     my ($self, $c ) = @_;
 
     my $form = $self->_build_story_form($c);
+    $form->process( $c->req );
 
-    $form->model->update
-        if $form->submitted_and_valid;
-
-    $c->req->redirect( $c->req->url( -query => 1 ));
+    if( $form->submitted_and_valid ) {
+        if( my $story = $self->_story_rs($c)->find( $form->param_value('news_story_id') + 0)) {
+            $form->model->update( $story );
+        } else {
+            $form->model->create;
+        }
+        $c->req->redirect( $self->_backto($c) );
+    } else {
+        $self->display_story_form($c,$form);
+    }
 }
 
 sub delete_story {
@@ -90,15 +106,24 @@ sub delete_story {
     $story->delete;
 }
 
+sub _date_fmt {
+    '%F %I:%M%p'
+}
+
 sub display_story_form {
-    my ($self, $c ) = @_;
+    my ($self, $c, $form ) = @_;
 
-    my $form = $self->_build_story_form($c);
+    $form ||= $self->_build_story_form($c);
 
-    if( my $id = $c->req->param('news_story_id') ) {
-        if( my $story = $self->_story_rs($c)->find( $id ) ) {
-            $form->model->default_values( $story )
-        }
+    # embed in the form an 'op' field that tells whether we are creating or updating
+    no warnings 'numeric';
+    if( my $story = $self->_story_rs($c)->find( $c->req->param('news_story_id') + 0) ) {
+        $form->model->default_values( $story );
+        $form->default_values({ op => 'update',
+                                date => $story->date->strftime( $self->_date_fmt ),
+                            });
+    } else {
+        $form->default_values({ op => 'create' });
     }
 
     $c->forward_to_mason_view(
