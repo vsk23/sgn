@@ -2,9 +2,13 @@
   #this code will not work when database connectivity is lost, or when these modules are broken.
   #since the page header is highly important and we ALWAYS expect it to work, we must continue even when that other stuff is broken.
   sub get_session_person {
+      # do not try to get logins outside of a mod_perl env, the
+      # login code makes perl segfault.
+      return unless $ENV{MOD_PERL};
+
       return eval {
-          require CXGN::Login;
-          require CXGN::People::Person;
+        require CXGN::Login;
+        require CXGN::People::Person;
   	my $dbh = $c->dbc->dbh;
   	my $person_id = CXGN::Login->new( $dbh )->has_session
     	  or return;
