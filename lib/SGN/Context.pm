@@ -420,10 +420,22 @@ has '_mason_interp' => (
    }
 
 sub forward_to_mason_view {
+    shift->_run_mason(@_);
+    exit;
+}
+
+=head2 run_mason
+
+  Usage: $c->run_mason( '/my/component', myarg => $foo, ... )
+  Desc : same as forward_to_mason_view above, except does
+         not call exit.
+
+=cut
+
+sub run_mason {
     my $self = shift;
     my @args = @_;
     $self->_trap_mason_error( sub { $self->_mason_interp->exec( @args ) } );
-    exit;
 }
 
 
