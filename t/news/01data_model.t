@@ -3,13 +3,7 @@ use warnings;
 
 use Test::More;
 
-use Test::DBIx::Class {
-    schema_class  => 'SGN::News::Schema',
-    connect_info  => ['dbi:SQLite:dbname=:memory:','',''],
-    fixture_class => '::Populate',
-    fixture_path  => [qw( t news fixtures )],
-    config_path  => [qw( t news config )],
-}, 'NewsStory', 'NewsCategory';
+use Test::DBIx::Class -config_path => [qw( t news test_news_schema )];
 
 fixtures_ok 'stories', 'loaded stories';
 
