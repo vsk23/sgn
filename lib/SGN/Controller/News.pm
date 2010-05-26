@@ -87,6 +87,7 @@ sub create_update_story {
     $form->process( $c->req );
 
     if( $form->submitted_and_valid ) {
+        no warnings 'numeric', 'uninitialized';
         if( my $story = $self->_story_rs->find( $form->param_value('news_story_id') + 0)) {
             $form->model->update( $story );
         } else {
