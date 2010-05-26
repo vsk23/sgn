@@ -1,17 +1,22 @@
 package SGN::Controller::News;
 use Moose;
+use warnings FATAL => 'all';
 use namespace::autoclean;
 
 use Carp qw/ confess /;
 
 use HTML::FormFu;
 
-use CXGN::Login;
-use CXGN::People::Person;
-
 use SGN::News::Schema;
 
 use YAML ();
+
+
+has 'schema' => (
+    is       => 'ro',
+    required => 1,
+    isa => 'DBIx::Class::Schema',
+);
 
 # the HTML::FormFu form that we use for editing news stories
 sub _build_story_form {
@@ -37,11 +42,11 @@ sub _build_story_form {
           - type: Hidden
             name: news_story_id
 
+    # form carries hidden state variables op (operation) and back_to
           - type: Hidden
             name: op
-
           - type: Hidden
-            name: backto
+            name: back_to
 
           - type: Text
             name: headline
@@ -58,21 +63,19 @@ sub _build_story_form {
             name: submit
 EOY
 
-#    $form->element({ type => 'Hidden', name => 'operation', default => $self->_backto($c) });
-
-    # embed a back-to url in the form, and the default date of right now (server time)
+    # a back-to url in the form, and the default date of right now (server time)
     $form->default_values({
-        backto => $self->_backto($c),
+        back_to => $self->_back_to($c),
         date   => lc DateTime->now( time_zone => 'local' )->strftime( $date_fmt ),
        });
 
-    $form->stash->{schema} = $c->dbic_schema('SGN::News::Schema');
+    $form->stash->{schema} = $self->schema;
 
     return $form;
 }
-sub _backto {
+sub _back_to {
     my ($self, $c) = @_;
-    my $back_to_url = $c->req->param('backto') || $c->req->url( -relative => 1 );
+    my $back_to_url = $c->req->param('back_to') || $c->req->url( -relative => 1 );
     $back_to_url =~ s|://||; #< foil any cross-site redirecting
     return $back_to_url;
 }
@@ -84,12 +87,12 @@ sub create_update_story {
     $form->process( $c->req );
 
     if( $form->submitted_and_valid ) {
-        if( my $story = $self->_story_rs($c)->find( $form->param_value('news_story_id') + 0)) {
+        if( my $story = $self->_story_rs->find( $form->param_value('news_story_id') + 0)) {
             $form->model->update( $story );
         } else {
             $form->model->create;
         }
-        $c->req->redirect( $self->_backto($c) );
+        $c->req->redirect( $self->_back_to($c) );
     } else {
         $self->display_story_form($c,$form);
     }
@@ -99,13 +102,13 @@ sub delete_story {
     my ($self, $c ) = @_;
 
     no warnings 'numeric';
-    my $story = $self->_story_rs($c)
+    my $story = $self->_story_rs
                      ->find( $c->req->param('news_story_id') + 0 )
         or $c->throw( message  => 'story not found',
                       is_error => 0 );
 
     $story->delete;
-    $c->req->redirect( $self->_backto($c) );
+    $c->req->redirect( $self->_back_to($c) );
 }
 
 # strftime format string we are using on the user side.  the other
@@ -121,8 +124,8 @@ sub display_story_form {
     $form ||= $self->_build_story_form($c);
 
     # fill in the form with existing values if we are updating
-    no warnings 'numeric';
-    if( my $story = $self->_story_rs($c)->find( $c->req->param('news_story_id') + 0) ) {
+    no warnings 'numeric', 'uninitialized';
+    if( my $story = $self->_story_rs->find( $c->req->param('news_story_id') + 0) ) {
         $form->model->default_values( $story );
         $form->default_values({
             op   => 'update',
@@ -132,21 +135,22 @@ sub display_story_form {
         $form->default_values({ op => 'create' });
     }
 
-    $c->forward_to_mason_view(
+    $c->run_mason(
         '/news/story_form.mas',
         form => $form,
        );
 }
 
 sub _story_rs {
-    my ($self,$c) = @_;
-    $c->dbic_schema('SGN::News::Schema')
-      ->resultset('NewsStory')
+    shift->schema->resultset('NewsStory')
 }
 
 # throws unless a user is logged in and has access to edit stories
 sub check_access {
     my ($self, $c ) = @_;
+
+    require CXGN::Login;
+    require CXGN::People::Person;
 
     my $dbh = $c->dbc->dbh;
     my $person_id  = CXGN::Login->new($dbh)->has_session()
