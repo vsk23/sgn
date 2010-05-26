@@ -559,8 +559,10 @@ sub _ensure_dbh_search_path_is_set {
     my ($dbh) = @_;
     return $dbh if $dbh->{private_search_path_is_set};
 
-    $dbh->do("SET search_path TO $dbh->{private_search_path_string}");
-    #warn "SET search_path TO $dbh->{private_search_path_string}";
+    my $dbms_name = lc $dbh->get_info( 17 );
+    if( $dbms_name eq 'postgresql' ) {
+        $dbh->do("SET search_path TO $dbh->{private_search_path_string}");
+    }
 
     $dbh->{private_search_path_is_set} = 1;
     return $dbh;
