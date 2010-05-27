@@ -56,7 +56,8 @@ my $self = SGN::Controller::News->new( schema => Schema() );
           $date_str,
           encode_entities($story->headline),
           encode_entities($story->body),
-          map { $_->short_name } $story->news_categories
+          ( map $_->short_name, NewsCategory->all ),
+          map { '"selected">'.$_->short_name } $story->news_categories
          );
       for (@should_contain) {
           isnt( index($out,$_), -1, "search form contains '$_'" )
