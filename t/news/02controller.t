@@ -38,20 +38,33 @@ my $self = SGN::Controller::News->new( schema => Schema() );
   }
 }
 
-# test form display for editing an existing form one
+# test form display for editing an existing one
 {
   while( my $story = NewsStory->next ) {
+
       my $out = capture_cgi(sub{ $self->display_story_form($c) },
                             GET => 'http://foo/bar.pl?news_story_id='.$story->news_story_id
                            );
 
       my $date_str = $story->date->strftime( $self->_date_fmt );
-      for ( 'Edit News Item', 'Date','Headline','id="story_form"','Body', $date_str, encode_entities($story->headline), encode_entities($story->body) ) {
+      my @should_contain = (
+          'Edit News Item',
+          'Date',
+          'Headline',
+          'id="story_form"',
+          'Body',
+          $date_str,
+          encode_entities($story->headline),
+          encode_entities($story->body),
+          map {$_->short_name,$_->long_name} $story->news_categories
+         );
+      for (@should_contain) {
           isnt( index($out,$_), -1, "search form contains '$_'" )
               or diag($out);
       }
   }
 }
+
 
 done_testing;
 
