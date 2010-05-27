@@ -102,7 +102,7 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->many_to_many(
     'news_categories',
-    'news_story_categories' => 'news_category_',
+    'news_story_categories' => 'news_category',
    );
 
 # You can replace this text with custom content, and it will be preserved on regeneration
