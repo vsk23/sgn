@@ -59,6 +59,14 @@ sub _build_story_form {
             label: Body
             name: body
 
+          - type: Select
+            multiple: 1
+            label: Categories
+            name: news_categories
+            model_config:
+              resultset: NewsCategory
+              label_column: short_name
+
           - type: Submit
             name: submit
 EOY
@@ -123,6 +131,7 @@ sub display_story_form {
     my ($self, $c, $form ) = @_;
 
     $form ||= $self->_build_story_form($c);
+    $form->process;
 
     # fill in the form with existing values if we are updating
     no warnings 'numeric', 'uninitialized';

@@ -27,4 +27,7 @@ is( NewsStory->search_related('news_story_categories')
     4,
     'got links' );
 
+
+is( $jimmy->news_categories->count, 1, 'jimmy is in 1 category' );
+
 done_testing;
