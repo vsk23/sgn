@@ -71,65 +71,68 @@ my $self = SGN::Controller::News->new( schema => Schema() );
 }
 
 # #test creating a new story via POST
-# {
+{
+    my $test_headline = 'This is the new headline';
+    my $test_body     = 'This is the <a href="?foo&bar=2">test</a> body';
 
-#     my $test_headline = 'This is the new headline';
-#     my $test_body     = 'This is the <a href="?foo&bar=2">test</a> body';
+    my $created_rs = NewsStory->search({ headline => $test_headline, body => $test_body });
+    is( $created_rs->count, 0, 'new story not yet in DB' );
 
-#     my $created_rs = NewsStory->search({ headline => $test_headline, body => $test_body });
-#     is( $created_rs->count, 0, 'new story not yet in DB' );
+    my $now_str = POSIX::strftime( $self->_date_fmt, localtime);
+    my $req = HTTP::Request->new(POST => 'http://sgn.localhost.localdomain/news/story_crud.pl');
+    $req->content_type('application/x-www-form-urlencoded');
+    $req->content(join '&',
+                    map { join '=', $_->[0], uri_escape($_->[1]) }
+                        [ date => $now_str ],
+                        [ back_to => '/test/back/to' ],
+                        [ headline => $test_headline ],
+                        [ body     => $test_body     ],
+                        [ op       => 'create'       ],
+                 );
+#     use LWP;
+#     LWP::UserAgent->new->request($req);
+#     die 'break';
+    my $out = capture_cgi(sub{ $self->create_update_story($c) },
+                          $req
+                         );
 
-#     my $now_str = POSIX::strftime( $self->_date_fmt, localtime);
-#     my $req = HTTP::Request->new(POST => 'http://sgn.localhost.localdomain/news/story_crud.pl');
-#     $req->content_type('application/x-www-form-urlencoded');
-#     $req->content(join '&',
-#                     map { join '=', $_->[0], uri_escape($_->[1]) }
-#                         [ date => $now_str ],
-#                         [ back_to => '/test/back/to' ],
-#                         [ headline => $test_headline ],
-#                         [ body     => $test_body     ],
-#                         [ op       => 'create'       ],
-#                  );
-# #     use LWP;
-# #     LWP::UserAgent->new->request($req);
-# #     die 'break';
-#     my $out = capture_cgi(sub{ $self->create_update_story($c) },
-#                           $req
-#                          );
+    TODO: { local $TODO = 'HTTP::Request::AsCGI does not work right';
+            is( $out, 'foo' );
 
-#     is( $out, 'foo' );
-
-#     is( $created_rs->count, 1, 'created a new story OK' );
-# }
+            is( $created_rs->count, 1, 'created a new story OK' );
+        }
+}
 
 
-# { # test AsCGI
+{ # test AsCGI
 
-#     my %data = (
-#         foo => 'bar',
-#        );
 
-#     my $req = HTTP::Request->new(POST => 'http://fake/url');
-#     $req->content_type('application/x-www-form-urlencoded');
-#     $req->content(join '&',
-#                     map { join '=', map uri_escape($_), $_, $data{$_} }
-#                         keys %data
-#                  );
+    my %data = (
+        foo => 'bar',
+       );
 
-#     my $out;
-#     warning_is {
-#         my $c = HTTP::Request::AsCGI->new($req)->setup;
-#         print Dumper( { CGI->new->Vars } );
+    my $req = HTTP::Request->new(POST => 'http://fake/url');
+    $req->content_type('application/x-www-form-urlencoded');
+    $req->content(join '&',
+                    map { join '=', map uri_escape($_), $_, $data{$_} }
+                        keys %data
+                 );
 
-#         $out = $c->stdout;
-#     } undef, 'no warnings';
+    my $out;
+    warning_is {
+        my $c = HTTP::Request::AsCGI->new($req)->setup;
+        print Dumper( { CGI->new->Vars } );
 
-#     local $/;
-#     $out = scalar <$out>;
+        $out = $c->stdout;
+    } undef, 'no warnings';
 
-#     is( $out, Dumper(\%data), 'post round-trip' );
-# }
+    local $/;
+    $out = scalar <$out>;
 
+  TODO: { local $TODO = 'HTTP::Request::AsCGI does not work right';
+          is( $out, Dumper(\%data), 'post round-trip' );
+      }
+}
 
 
 
