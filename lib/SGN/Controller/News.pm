@@ -26,8 +26,10 @@ sub _build_story_form {
     my $date_fmt = $self->_date_fmt;
     my $form = HTML::FormFu->new(YAML::Load(<<EOY));
       method: POST
+      attributes:
+        name: story_form
       model_config:
-         resultset: NewsStory
+        resultset: NewsStory
       elements:
           - type: Text
             name: date

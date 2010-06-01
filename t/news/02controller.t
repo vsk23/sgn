@@ -4,6 +4,8 @@ use warnings FATAL => 'all';
 use Data::Dumper;
 use Test::More;
 use Test::Warn;
+use POSIX;
+
 use Capture::Tiny 'capture';
 
 use HTML::Entities;
