@@ -101,12 +101,9 @@ my $imgcache = new File::Cache({
                                });
 my $filename;
 if(defined($imgcache->get("$contig_id"))){
-# print "file exists\n";
 $filename = $imgcache->get("$contig_id");
-#print "$filename \n\n";
 
 } else{
-#print "file does not exist \n";
 my $template="contigMap".$contig_id."XXXX";
 my $temp_image = File::Temp ->new(
                                   TEMPLATE => $template,
@@ -124,7 +121,7 @@ $filename = pop(@filepath);
 $imgcache->set("$contig_id", $filename);
 }
 
-#print "$uri_dir/$filename \n";
+#print $uri_dir."/".$filename."\n";
 #-- GENERATE HTML
 my $basic_info_content = <<HTML;
 
