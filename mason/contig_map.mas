@@ -1,0 +1,153 @@
+<%doc>
+
+=head1 NAME
+
+contig_map.mas - SGN component to produce contig information map
+
+=cut
+
+</%doc>
+
+<%args>
+$data_file
+$index_file
+$contig_id
+$temp_dir
+$tab_index_file
+</%args>
+
+<%perl>
+
+
+
+use strict;
+use warnings;
+
+use CXGN::BioTools::AceTools;
+use GD::Graph::bars;
+use GD::Graph::colour;
+use GD;
+use File::Temp qw/ tempdir /;
+use File::Basename;
+use File::Cache;
+
+use CXGN::Page::FormattingHelpers  qw/ info_section_html info_table_html columnar_table_html page_title_html html_break_string /;
+
+use FileHandle;
+
+
+
+## TESTING build_ace_hash_file ##
+my $tester_hash = CXGN::BioTools::AceTools-> build_index_file($data_file, $index_file);
+
+## TESTING get_location_by_id ###
+my $byte_loc =CXGN::BioTools::AceTools-> get_location_by_id($contig_id,$tester_hash);
+#print STDERR "$byte_loc \n";
+
+## TESTING get_seq_by_location ##
+my $contig_info = CXGN::BioTools::AceTools->get_contig_information($byte_loc, $data_file, $contig_id);
+
+###GENERATE GRAPH###
+my @depth;
+my @sequence;
+
+#initialize depth &sequence
+for (my $count =0; $count< $contig_info->{$contig_id."_length"}; $count++){
+             $sequence[$count] = $count;
+             $depth[$count] = 0;
+    }
+
+if(-f $tab_index_file){
+       tie (my %tab_hash, 'DB_File', $tab_index_file, O_RDONLY,0666) or die "Couldn't tie existing hash";
+}
+while( my ($id, $value) = each %$contig_info ) {
+    if($id =~ m/_sc/){
+	 if($value =~  m/\S?(\d+)\-(\d+)\S?/){
+	    my $read_start = $1;
+	    my $read_end = $2;
+	    for(my $i=$read_start;$i<=$read_end;$i++){
+		$depth[$i]+=1;
+	     }
+
+	 }
+    }
+
+}
+
+##draw plot
+my @data=(\@sequence,\@depth);
+print STDERR "LENGTH OF SEQUENCE:".@sequence."\n";
+my $graph = GD::Graph::bars->new(700,300);
+$graph->set(
+             box_axis          => 'true',
+             x_label           => 'Sequence Length',
+             y_label           => 'Depth',
+             x_label_skip      => 0,
+             x_tick_number     => 10,
+             x_max_value       => (scalar(@sequence))+50,
+             transparent       => 0,
+             correct_width     => 'false' 
+            
+           ) or die $graph->error;
+$graph->set( dclrs => [ qw(pink cyan) ] );
+my $myimage = $graph->plot(\@data) or die $graph->error;
+##store plot in a temporary file
+my $uri_dir = $c->get_conf('tempfiles_subdir') . '/temp_images';
+##create a cache to store temp files
+my $imgcache = new File::Cache({
+                                namespace  => $uri_dir,
+                                expires_in => 86400,
+                                filemode   => 0660
+                               });
+my $filename;
+if(defined($imgcache->get("$contig_id"))){
+# print "file exists\n";
+$filename = $imgcache->get("$contig_id");
+#print "$filename \n\n";
+
+} else{
+#print "file does not exist \n";
+my $template="contigMap".$contig_id."XXXX";
+my $temp_image = File::Temp ->new(
+                                  TEMPLATE => $template,
+                                  DIR      => $temp_dir,
+                                  SUFFIX   => '.png',
+                                  UNLINK   => 0
+                                 );
+binmode($temp_image);
+print $temp_image $myimage->png;
+#-- GET URI PATH TO TEMP_IMAGE & FILE NAME OF TEMP FILE
+
+
+my @filepath = split('/', $temp_image->filename);
+$filename = pop(@filepath);
+$imgcache->set("$contig_id", $filename);
+}
+
+#print "$uri_dir/$filename \n";
+#-- GENERATE HTML
+my $basic_info_content = <<HTML;
+
+    <table width="100%">
+    	   <tr> <td> <img src=$uri_dir/$filename></td></tr>
+   </table>
+   
+   <br>
+   <br>
+   <br>
+
+HTML
+
+
+
+my $basic_info_html .= info_section_html( title        => "Contig Depth Graph",
+				          contents     =>$basic_info_content,
+	                                  collapsible  => 1
+                                     );
+                                 
+
+</%perl>
+<% $basic_info_html %>
+
+
+
